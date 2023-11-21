@@ -1,0 +1,31 @@
+#server:
+#  port: 9001
+
+spring:
+  datasource:
+      driverClassName: com.mysql.jdbc.Driver
+      url: jdbc:mysql://localhost:3306/querydsl?serverTimezone=Asia/Seoul
+      username: root
+      password: root
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+#        show_sql: true 쿼리를 다 남기기때문에 로그파일에 남기는게 좋다
+        format_sql: true
+        default_batch_fetch_size: 100 #최적화 옵션 , where in 쿼리의 개수를 뜻함
+        #dialect: 맞는 db로 쿼리문 날림
+        use_sql_comments: true #jpql을 console에 찍어줌
+
+  data:
+    web:
+      pageable:
+        default-page-size: 10 #페이징 글로벌 설정
+        max-page-size: 2000
+
+logging.level:
+  org.hibernate.SQL: debug
+  org.hibernate.type: trace #파라미터 바인딩하는것까지 보여줌
+
