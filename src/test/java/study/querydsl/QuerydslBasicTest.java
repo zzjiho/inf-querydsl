@@ -4,34 +4,31 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.ExpressionUtils;
-import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Commit;
 import org.springframework.transaction.annotation.Transactional;
 import study.querydsl.dto.MemberDto;
 import study.querydsl.dto.QMemberDto;
 import study.querydsl.dto.UserDto;
 import study.querydsl.entity.Member;
 import study.querydsl.entity.QMember;
-import study.querydsl.entity.QTeam;
 import study.querydsl.entity.Team;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-
 import java.util.List;
 
-import static com.querydsl.jpa.JPAExpressions.*;
+import static com.querydsl.jpa.JPAExpressions.select;
 import static org.assertj.core.api.Assertions.assertThat;
-import static study.querydsl.entity.QMember.*;
-import static study.querydsl.entity.QTeam.*;
+import static study.querydsl.entity.QMember.member;
+import static study.querydsl.entity.QTeam.team;
 
 
 @SpringBootTest
@@ -50,10 +47,12 @@ public class QuerydslBasicTest {
         Team teamB = new Team("teamB");
         em.persist(teamA);
         em.persist(teamB);
+
         Member member1 = new Member("member1", 10, teamA);
         Member member2 = new Member("member2", 20, teamA);
         Member member3 = new Member("member3", 30, teamB);
         Member member4 = new Member("member4", 40, teamB);
+
         em.persist(member1);
         em.persist(member2);
         em.persist(member3);
@@ -211,7 +210,7 @@ public class QuerydslBasicTest {
 
     /**
      * 팀 A에 소속된 모든 회원
-     *
+     * <p>
      * 연관관계가 없어도 join을 할 수 있다.
      */
     @Test
@@ -251,7 +250,7 @@ public class QuerydslBasicTest {
     /**
      * 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 모두 조회
      * JPQL : select m, t from Member m left join m.team t on t.name = 'teamA'
-     *
+     * <p>
      * 따라서 on 절을 활용한 조인 대상 필터링을 사용할 때,
      * 내부조인 이면 익숙한 where 절로 해결하고, 정말 외부조인이 필요한 경우에만 이 기능을 사용하자
      */
@@ -261,7 +260,7 @@ public class QuerydslBasicTest {
                 .select(member, team)
                 .from(member)
                 .leftJoin(member.team, team).on(team.name.eq("teamA")) //inner join 때는 where 로 해주는거랑 결과가 똑같다. leftjoin때는 on절이 의미가 있음.
-                                                                            //'leftJoin하는데 team의 이름이 teamA인 것을 leftJoin해라' 라는 뜻 이므로 on절이 의미가 있다.
+                //'leftJoin하는데 team의 이름이 teamA인 것을 leftJoin해라' 라는 뜻 이므로 on절이 의미가 있다.
                 .fetch();
 
         for (Tuple tuple : result) {
@@ -270,37 +269,37 @@ public class QuerydslBasicTest {
     }
 
     /**
-         * 연관관계 없는 엔티티 외부 조인
-         * 회원의 이름이 팀 이름과 같은 대상 외부 조인
-         */
-        @Test
-        public void join_on_no_relation() throws Exception {
-            em.persist(new Member("teamA"));
-            em.persist(new Member("teamB"));
-            em.persist(new Member("teamC"));
+     * 연관관계 없는 엔티티 외부 조인
+     * 회원의 이름이 팀 이름과 같은 대상 외부 조인
+     */
+    @Test
+    public void join_on_no_relation() throws Exception {
+        em.persist(new Member("teamA"));
+        em.persist(new Member("teamB"));
+        em.persist(new Member("teamC"));
 
-            List<Tuple> result = queryFactory
-                    .select(member, team)
-                    .from(member)
-                    .leftJoin(team).on(member.username.eq(team.name)) // leftJoin() 부분에 일반 조인과 다르게 엔티티 하나만 들어가서 on으로만 조인함
-                    .fetch();
+        List<Tuple> result = queryFactory
+                .select(member, team)
+                .from(member)
+                .leftJoin(team).on(member.username.eq(team.name)) // leftJoin() 부분에 일반 조인과 다르게 엔티티 하나만 들어가서 on으로만 조인함
+                .fetch();
 
-            for (Tuple tuple : result) {
-                System.out.println("tuple = " + tuple.toString());
-            }
+        for (Tuple tuple : result) {
+            System.out.println("tuple = " + tuple.toString());
         }
+    }
 
-        @Test
-        public void fetchJoinUse() throws Exception {
-            em.flush();
-            em.clear();
+    @Test
+    public void fetchJoinUse() throws Exception {
+        em.flush();
+        em.clear();
 
-            queryFactory
-                    .selectFrom(member)
-                    .join(member.team, team).fetchJoin() //fetchJoin써서 연관관계 된거 다 조회
-                    .where(member.username.eq("member1"))
-                    .fetchOne();
-        }
+        queryFactory
+                .selectFrom(member)
+                .join(member.team, team).fetchJoin() //fetchJoin써서 연관관계 된거 다 조회
+                .where(member.username.eq("member1"))
+                .fetchOne();
+    }
 
     /**
      * 나이가 가장 많은 회원 조회
@@ -322,7 +321,7 @@ public class QuerydslBasicTest {
                 .containsExactly(40);
     }
 
-      /**
+    /**
      * 나이가 평균 이상인 회원
      */
     @Test
@@ -339,7 +338,7 @@ public class QuerydslBasicTest {
                 .fetch();
 
         assertThat(result).extracting("age")
-                .containsExactly(30,40);
+                .containsExactly(30, 40);
 
     }
 
@@ -361,7 +360,7 @@ public class QuerydslBasicTest {
                 .fetch();
 
         assertThat(result).extracting("age")
-                .containsExactly(20,30, 40);
+                .containsExactly(20, 30, 40);
     }
 
     @Test
@@ -446,7 +445,7 @@ public class QuerydslBasicTest {
 
     /**
      * 프로젝션 : select절에 뭘 가져올지 대상을 지정하는 것을 프로젝션이라고 함
-     *
+     * <p>
      * 프로젝션 대상이 하나면 타입을 명확하게 지정할 수 있음
      * 프로젝션 대상이 둘 이상이면 튜플이나 DTO로 조회
      */
@@ -643,5 +642,82 @@ public class QuerydslBasicTest {
         return usernameEq(usernameCond).and(ageEq(ageCond));
     }
 
+    /**
+     * 한번에 update
+     * <p>
+     * 주의점 : 영속성 컨텍스트를 무시하고 db에 날려주기 때문에
+     * db랑 영속성 컨텍슽그ㅏ 안맞기 때문에
+     * flush() 하고 clear 해서 영속성 컨텍스트 데이터를 다 초기화 해주자
+     */
+    @Test
+    @Commit
+    public void bulkUpdate() throws Exception {
+
+        //member1 = 10살 -> 비회원
+        //member2 = 20살 -> 비회원
+        //member3 = 30살 -> 유지
+        //member4 = 40살 -> 유지
+
+        long count = queryFactory
+                .update(member)
+                .set(member.username, "비회원")
+                .where(member.age.lt(28))
+                .execute();
+
+        em.flush();
+        em.clear();
+
+        List<Member> result = queryFactory
+                .selectFrom(member)
+                .fetch();
+
+        for (Member member1 : result) {
+            System.out.println("member1 = " + member1.toString());
+        }
+    }
+
+    /**
+     * 기존 숫자에 더하기, 곱하기
+     */
+    @Test
+    public void bulkAdd() throws Exception {
+        long count = queryFactory
+                .update(member)
+                .set(member.age, member.age.add(1)) //multiply
+                .execute();
+    }
+
+    /**
+     * 삭제
+     */
+    @Test
+    public void bulkDelete() throws Exception {
+        long count = queryFactory
+                .delete(member)
+                .where(member.age.gt(18))
+                .execute();
+    }
+
+    @Test
+    public void sqlFunction() throws Exception {
+    }
+
+
+
+
+
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
