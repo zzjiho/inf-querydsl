@@ -19,7 +19,7 @@ import static org.springframework.util.StringUtils.*;
 import static study.querydsl.entity.QMember.*;
 import static study.querydsl.entity.QTeam.*;
 
-public class MemberRepositoryCustomImpl implements MemberRepositoryCustom{
+public class MemberRepositoryCustomImpl implements MemberRepositoryCustom{ //test
 
     private final JPAQueryFactory queryFactory;
 
